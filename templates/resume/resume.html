@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %} — Resume{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">📄 Resume Manager</h1>
+  <form method="post" action="{% url 'resume_upload' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="btn btn-primary" style="cursor:pointer">
+      + Upload PDF
+      <input type="file" name="file" accept=".pdf" style="display:none" onchange="this.form.submit()"/>
+    </label>
+  </form>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Your Resumes</div>
+    {% for r in resumes %}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid #e2e8f0">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-weight:600">{{ r.original_filename }}</span>
+          {% if r.is_active %}<span class="badge badge-offer">Active</span>{% endif %}
+        </div>
+        <div>
+          {% for skill in r.extracted_skills|slice:":6" %}
+            <span class="skill-tag">{{ skill }}</span>
+          {% endfor %}
+          {% if r.extracted_skills|length > 6 %}
+            <span class="skill-tag">+{{ r.extracted_skills|length|add:"-6" }} more</span>
+          {% endif %}
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">{{ r.uploaded_at|date:"M d, Y" }}</div>
+      </div>
+      <form method="post" action="{% url 'resume_delete' r.pk %}" style="margin-left:12px">
+        {% csrf_token %}
+        <button class="btn btn-danger btn-sm" onclick="return confirm('Delete this resume?')">Delete</button>
+      </form>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <div class="empty-icon">📄</div>
+      <p>No resumes yet. Upload a PDF to get started.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Analyze Against Job Description</div>
+    <form method="post" action="{% url 'resume_analyze' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Select Resume</label>
+        <select class="form-control" name="resume_id" required>
+          <option value="">-- Select --</option>
+          {% for r in resumes %}
+            <option value="{{ r.pk }}" {% if r.is_active %}selected{% endif %}>{{ r.original_filename }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Job Title (optional)</label>
+        <input class="form-control" name="job_title" placeholder="e.g. Backend Developer"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Job Description</label>
+        <textarea class="form-control" name="job_description" rows="6" placeholder="Paste the full job description here…" required></textarea>
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">🔍 Analyze Match</button>
+    </form>
+  </div>
+</div>
+
+{% if latest %}
+<div class="card">
+  <div class="card-title">Latest Analysis Result</div>
+  <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+    <div style="text-align:center">
+      <div style="font-size:48px;font-weight:700;color:{% if latest.match_score >= 70 %}#10b981{% elif latest.match_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}">
+        {{ latest.match_score }}%
+      </div>
+      <div style="font-size:13px;color:#64748b">{{ latest.job_title|default:"Match Score" }}</div>
+    </div>
+    <div style="flex:1;min-width:260px">
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">✅ Matched Skills</div>
+        {% for s in latest.matched_skills %}<span class="skill-tag matched">{{ s }}</span>{% empty %}<span style="color:#64748b;font-size:13px">None detected</span>{% endfor %}
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">❌ Missing Skills</div>
+        {% for s in latest.missing_skills %}<span class="skill-tag missing">{{ s }}</span>{% empty %}<span style="color:#10b981;font-size:13px">None — great match!</span>{% endfor %}
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">💡 Suggestions</div>
+        {% for s in latest.suggestions %}<div style="font-size:13px;color:#64748b;margin-bottom:4px">• {{ s }}</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if analyses|length > 1 %}
+<div class="card">
+  <div class="card-title">Analysis History</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Job Title</th><th>Match Score</th><th>Matched</th><th>Missing</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for a in analyses %}
+        <tr>
+          <td>{{ a.job_title|default:"—" }}</td>
+          <td><span style="font-weight:700;color:{% if a.match_score >= 70 %}#10b981{% elif a.match_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}">{{ a.match_score }}%</span></td>
+          <td>{{ a.matched_skills|length }} skills</td>
+          <td>{{ a.missing_skills|length }} skills</td>
+          <td style="color:#64748b;font-size:12px">{{ a.analyzed_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

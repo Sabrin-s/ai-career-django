@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %} — Interview Question{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">🎤 Mock Interview</h1>
+  <a href="{% url 'interview' %}" class="btn btn-outline">✕ Exit Session</a>
+</div>
+
+{% if prev_feedback %}
+<div class="card" style="border-left:4px solid #10b981">
+  <div style="display:flex;gap:20px;align-items:center">
+    <div style="font-size:40px;font-weight:700;color:{% if prev_feedback.score >= 70 %}#10b981{% elif prev_feedback.score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}">
+      {{ prev_feedback.score|floatformat:0 }}%
+    </div>
+    <div>
+      <div style="font-weight:600;margin-bottom:4px">Previous Answer Feedback</div>
+      <div style="color:#64748b;font-size:14px">{{ prev_feedback.feedback }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:13px;color:#64748b">Question {{ index|add:1 }} of {{ total }} • <span style="text-transform:capitalize">{{ session.category }}</span></div>
+    <span class="badge badge-applied" style="text-transform:capitalize">{{ session.difficulty }}</span>
+  </div>
+
+  <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:20px">
+    <div style="height:100%;background:#4f46e5;border-radius:4px;width:{% widthratio index total 100 %}%"></div>
+  </div>
+
+  <div style="background:#eef2ff;border-left:4px solid #4f46e5;border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:20px">
+    <div style="font-weight:600;font-size:16px;line-height:1.5">{{ question.question }}</div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">Your Answer</label>
+      <textarea class="form-control" name="answer" rows="7" placeholder="Type your answer here. Be specific, use examples, and explain your reasoning…" required></textarea>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px">Aim for at least 50 words for a good score.</div>
+    </div>
+    <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Submit Answer →</button>
+  </form>
+</div>
+{% endblock %}

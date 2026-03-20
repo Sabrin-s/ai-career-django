@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %} — Skill Gap{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">🧠 Skill Gap Analyzer</h1>
+</div>
+
+<form method="get" style="max-width:320px;margin-bottom:24px">
+  <div class="form-group">
+    <label class="form-label">Select Resume</label>
+    <select class="form-control" name="resume_id" onchange="this.form.submit()">
+      <option value="">-- Choose a resume --</option>
+      {% for r in resumes %}
+        <option value="{{ r.pk }}" {% if selected_resume and selected_resume.pk == r.pk %}selected{% endif %}>{{ r.original_filename }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if not gap %}
+<div class="alert alert-info">No analysis found. Go to <a href="{% url 'resume' %}">Resume</a> page and run an analysis first.</div>
+{% else %}
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="card" style="display:flex;gap:24px;align-items:center">
+    <div style="text-align:center">
+      <div style="font-size:56px;font-weight:700;color:{% if gap.match_score >= 70 %}#10b981{% elif gap.match_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}">
+        {{ gap.match_score }}%
+      </div>
+      <div style="font-size:12px;color:#64748b">Match Score</div>
+    </div>
+    <div>
+      {% if gap.job_title %}<div style="color:#64748b;margin-bottom:4px">For: {{ gap.job_title }}</div>{% endif %}
+      <div style="font-size:12px;color:#94a3b8">{{ gap.analyzed_at|date:"M d, Y" }}</div>
+      <div style="margin-top:10px">
+        {% if gap.match_score >= 70 %}<span class="badge badge-offer">Strong Match 🎯</span>
+        {% elif gap.match_score >= 40 %}<span class="badge badge-interview">Partial Match ⚡</span>
+        {% else %}<span class="badge badge-rejected">Needs Work 📚</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:20px;text-align:center;margin-bottom:16px">
+      <div style="flex:1">
+        <div style="font-size:36px;font-weight:700;color:#10b981">{{ gap.matched_skills|length }}</div>
+        <div style="font-size:13px;color:#64748b">Skills matched</div>
+      </div>
+      <div style="width:1px;background:#e2e8f0"></div>
+      <div style="flex:1">
+        <div style="font-size:36px;font-weight:700;color:#ef4444">{{ gap.missing_skills|length }}</div>
+        <div style="font-size:13px;color:#64748b">Skills missing</div>
+      </div>
+    </div>
+    <div class="progress" style="height:12px">
+      {% with total_skills=gap.matched_skills|length|add:gap.missing_skills|length %}
+      <div class="progress-bar" style="background:#10b981;width:{% if total_skills %}{% widthratio gap.matched_skills|length total_skills 100 %}%{% else %}0%{% endif %}"></div>
+      {% endwith %}
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px">Skills coverage</div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="card">
+    <div class="card-title">✅ Skills You Have</div>
+    {% for s in gap.matched_skills %}<span class="skill-tag matched">{{ s }}</span>
+    {% empty %}<p style="color:#64748b;font-size:14px">No matching skills detected.</p>{% endfor %}
+  </div>
+  <div class="card">
+    <div class="card-title">❌ Skills to Learn</div>
+    {% for s in gap.missing_skills %}<span class="skill-tag missing">{{ s }}</span>
+    {% empty %}<p style="color:#10b981;font-size:14px;font-weight:600">🎉 You have all required skills!</p>{% endfor %}
+  </div>
+</div>
+
+{% if gap.suggestions %}
+<div class="card">
+  <div class="card-title">💡 Suggestions</div>
+  {% for s in gap.suggestions %}
+  <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #e2e8f0">
+    <span style="color:#4f46e5">•</span>
+    <span style="font-size:14px;line-height:1.5">{{ s }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

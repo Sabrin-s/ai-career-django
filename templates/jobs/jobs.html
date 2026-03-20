@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %} — Job Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">💼 Job Tracker</h1>
+  <button class="btn btn-primary" onclick="toggleForm()">+ Add Application</button>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">{{ total }}</div></div>
+  <div class="stat-card"><div class="stat-label">Interview Rate</div><div class="stat-value" style="color:#f59e0b">{{ interview_rate }}%</div></div>
+  <div class="stat-card"><div class="stat-label">Offers</div><div class="stat-value" style="color:#10b981">{{ offer_count }}</div></div>
+  <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value" style="color:#ef4444">{{ rejected_count }}</div></div>
+</div>
+
+<div id="addForm" style="display:none">
+  <div class="card">
+    <div class="card-title">New Application</div>
+    <form method="post" action="{% url 'job_add' %}">
+      {% csrf_token %}
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Company *</label><input class="form-control" name="company" placeholder="Google" required/></div>
+        <div class="form-group"><label class="form-label">Role *</label><input class="form-control" name="role" placeholder="Software Engineer" required/></div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-control" name="location" placeholder="Remote / Chennai"/></div>
+        <div class="form-group"><label class="form-label">Salary Range</label><input class="form-control" name="salary_range" placeholder="₹10L – ₹15L"/></div>
+        <div class="form-group"><label class="form-label">Job URL</label><input class="form-control" type="url" name="job_url" placeholder="https://..."/></div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" name="status">
+            {% for val, label in status_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Applied Date</label><input class="form-control" type="date" name="applied_date"/></div>
+        <div class="form-group"><label class="form-label">Follow-up Date</label><input class="form-control" type="date" name="follow_up_date"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="2" placeholder="Referral, recruiter contact…"></textarea></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" type="submit">Save Application</button>
+        <button class="btn btn-outline" type="button" onclick="toggleForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<form method="get" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+  <input class="form-control" style="width:220px" name="search" placeholder="🔍 Search company or role…" value="{{ search }}"/>
+  <select class="form-control" style="width:160px" name="status" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    {% for val, label in status_choices %}<option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-outline" type="submit">Filter</button>
+</form>
+
+<div class="card">
+  {% if applications %}
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Company</th><th>Role</th><th>Location</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td style="font-weight:600">{{ app.job.company }}</td>
+          <td>{{ app.job.role }}</td>
+          <td style="color:#64748b">{{ app.job.location|default:"—" }}</td>
+          <td>
+            <form method="post" action="{% url 'job_update_status' app.pk %}" style="display:inline">
+              {% csrf_token %}
+              <select class="form-control" name="status" style="padding:4px 8px;height:30px;width:130px" onchange="this.form.submit()">
+                {% for val, label in status_choices %}<option value="{{ val }}" {% if app.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </form>
+          </td>
+          <td style="color:#64748b;font-size:12px">{{ app.applied_date|default:"—" }}</td>
+          <td>
+            <form method="post" action="{% url 'job_delete' app.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-danger btn-sm" onclick="return confirm('Delete?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">💼</div>
+    <p>No applications found. Add your first one above!</p>
+  </div>
+  {% endif %}
+</div>
+<script>
+function toggleForm(){
+  var f=document.getElementById('addForm');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+</script>
+{% endblock %}

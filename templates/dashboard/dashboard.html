@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %} — Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome back, {{ request.user.username }} 👋</h1>
+    <p style="color:#64748b;margin-top:2px">Here's your job search at a glance.</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Applications</div>
+    <div class="stat-value">{{ total_apps }}</div>
+    <div class="stat-sub">across all statuses</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Interview Rate</div>
+    <div class="stat-value" style="color:#f59e0b">{{ interview_rate }}%</div>
+    <div class="stat-sub">reached interview stage</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Offer Rate</div>
+    <div class="stat-value" style="color:#10b981">{{ offer_rate }}%</div>
+    <div class="stat-sub">of applications got offers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Interview Score</div>
+    <div class="stat-value" style="color:#4f46e5">{% if avg_score %}{{ avg_score }}%{% else %}—{% endif %}</div>
+    <div class="stat-sub">{{ total_sessions }} sessions completed</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Application Pipeline</div>
+    {% for status, count in by_status.items %}
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="text-transform:capitalize">{{ status|cut:"_" }}</span>
+        <span style="font-weight:600">{{ count }}</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" style="width:{% if total_apps %}{% widthratio count total_apps 100 %}%{% else %}0%{% endif %}"></div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>No applications yet.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Resume & Match Score</div>
+    {% if active_resume %}
+    <div style="margin-bottom:12px">
+      <div style="font-weight:600">{{ active_resume.original_filename }}</div>
+      {% if latest_analysis %}
+      <div style="font-size:36px;font-weight:700;color:{% if latest_analysis.match_score >= 70 %}#10b981{% elif latest_analysis.match_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %};margin:8px 0">
+        {{ latest_analysis.match_score }}%
+      </div>
+      <div style="font-size:12px;color:#64748b">Last analyzed for: {{ latest_analysis.job_title|default:"Unknown role" }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:6px">Top Skills</div>
+      {% for skill in active_resume.extracted_skills|slice:":8" %}
+        <span class="skill-tag">{{ skill }}</span>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📄</div>
+      <p>No resume uploaded yet. <a href="{% url 'resume' %}">Upload one</a></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Recent Applications</div>
+    {% for app in recent_apps %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0">
+      <div>
+        <div style="font-weight:600">{{ app.job.role }}</div>
+        <div style="color:#64748b;font-size:12px">{{ app.job.company }}</div>
+      </div>
+      <span class="badge badge-{{ app.status }}">{{ app.get_status_display }}</span>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>No applications yet.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Interview Performance</div>
+    {% if total_sessions %}
+    <div style="font-size:36px;font-weight:700;color:#4f46e5;margin-bottom:8px">{{ avg_score }}%</div>
+    <div style="color:#64748b;font-size:13px;margin-bottom:16px">Average score across {{ total_sessions }} sessions</div>
+    {% for cs in category_scores %}
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:13px;text-transform:capitalize">{{ cs.category }}</span>
+        <span style="font-size:13px;font-weight:600">{{ cs.avg_score|floatformat:0 }}%</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" style="width:{{ cs.avg_score|floatformat:0 }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🎤</div>
+      <p>No mock interviews yet. <a href="{% url 'interview' %}">Start one</a></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
