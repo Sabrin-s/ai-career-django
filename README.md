@@ -1,4 +1,4 @@
-# CareerAI — Django Full Stack (No React, No Node.js)
+# CareerAI — Django Full Stack 
 
 ## Run with ONE terminal only
 
