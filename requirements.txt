@@ -1,3 +1,4 @@
+gunicorn==21.2.0
 Django==4.2.7
 mysqlclient==2.2.0
 PyPDF2==3.0.1
